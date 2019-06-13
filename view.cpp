@@ -1,14 +1,17 @@
 #define PI 3.14159265
 #include "GL/freeglut.h"
 #include "GL/gl.h"
-#include <stdio.h>
-#include <time.h>
-#include <string.h>
+#include <cstring>
 #include <cmath>
+#include <iostream>
+#include <unistd.h>
+#include <csignal>
 
 void keyboard(unsigned char key, int x, int y);
 void reshape(int width, int height);
 GLuint loadBMP_custom(const char * imagepath);
+
+using namespace std;
 
 //Position of the robot
 float position [2];
@@ -58,6 +61,21 @@ void display()
     glTexCoord2f(1.0f, 0.0f); glVertex3f(size[0]/2,-size[1]/2,-2);
 
     glEnd();
+    /*
+    glColor4f(1.0,1.0,1.0,0.3)
+    glBegin(GL_TRIANGLE_FAN);
+    int i;
+    glVertex3f(0,0,0);
+    for(i=0; i<100; i++) {
+        glVertex3f(
+
+
+    }
+
+
+    glEnd();
+
+    */
     glPopMatrix();
 
 
@@ -68,8 +86,17 @@ void display()
 
 int main(int argc, char **argv)
 {
-    time_t seconds;
-    seconds = time(NULL);
+    int var ;
+    /*
+    sigset_t set;
+    int sig;
+    sigemptyset(&set);
+    sigaddset(&set, SIGUSR1);
+    sigwait(&set , &sig);
+    cout << sig << endl;
+    */
+    cin >> var;
+    cout << var << endl;
     if (argc == 6) {
         position[0] = strtof(argv[1],NULL);
         position[1] = strtof(argv[2],NULL);
@@ -77,11 +104,11 @@ int main(int argc, char **argv)
         size[0] = strtof(argv[4],NULL);
         size[1] = strtof(argv[5],NULL);
     } else {
-        printf("Wrong number of arguments, ./view needs 5 arguments\n");
+        cout << "Wrong number of arguments, ./view needs 5 arguments" << endl;
         return(1);
     }
 
-    printf("### Press c to close the Simulation view\n");
+    cout << "### Press c to close the Simulation view" << endl;
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 
@@ -113,7 +140,6 @@ int main(int argc, char **argv)
     robotTex = loadBMP_custom("res/logo.bmp");
 
     glutMainLoop();
-    printf("%ld\n", seconds);
 
     return 0;
 }
@@ -155,8 +181,9 @@ void reshape(int width, int height) {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glOrtho(-x, x, -y, y, 0, 4.0);
-
 }
+
+
 
 GLuint loadBMP_custom(const char * imagepath) {
     // Data read from the header of the BMP file
@@ -169,14 +196,14 @@ GLuint loadBMP_custom(const char * imagepath) {
 
     // Open the file
     FILE * file = fopen(imagepath,"rb");
-    if (!file){printf("Image could not be opened\n"); return 0;}
+    if (!file){cout << "Image could not be opened" << endl; return 0;}
 
     if ( fread(header, 1, 54, file)!=54 ){ // If not 54 bytes read : problem
-        printf("Not a correct BMP file\n");
+        cout << "Not a correct BMP file" << endl;
         return 0;
     }
     if ( header[0]!='B' || header[1]!='M' ){
-        printf("Not a correct BMP file\n");
+        cout << "Not a correct BMP file" << endl;
         return 0;
     }
 

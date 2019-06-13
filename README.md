@@ -15,7 +15,7 @@ Use `make` to compile the code.
 ```bash
 ./view xInitialValue yInitialValue initialAngle xRobotSize yRobotSize
 ```
-The lengths are in meter and the  angle is degree.
+The lengths are in meter and the angle is in degree.
 
 ## Caution
 
