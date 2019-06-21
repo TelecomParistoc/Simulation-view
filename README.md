@@ -4,7 +4,7 @@ The Simulation view is a graphic display done with OpenGL that shows the route o
 
 ## Instalation
 
-Use the package manager apt to install libgl1-mesa-dev and freeglut3-dev.
+On Debian or Ubuntu, use the package manager apt to install libgl1-mesa-dev and freeglut3-dev.
 ```bash
 sudo apt install libgl1-mesa-dev freeglut3-dev
 ```
@@ -25,6 +25,6 @@ GLuint loadBMP_custom(const char * imagepath);
 ```
 need to be 24 bit bitmpas.
 
-You can convert your image on [online-converting](https://online-converting.com/image/convert2bmp/).
+You can convert your image with the command line 'convert' or on [online-converting](https://online-converting.com/image/convert2bmp/).
 
 

@@ -10,6 +10,9 @@
 void keyboard(unsigned char key, int x, int y);
 void reshape(int width, int height);
 GLuint loadBMP_custom(const char * imagepath);
+void timer (int value);
+void signal_handler(int signum);
+void move(bool way);
 
 using namespace std;
 
@@ -21,6 +24,8 @@ float angle;
 
 //Size of the robot
 float size [2];
+
+float distance_goal;
 
 GLuint fieldTex;
 GLuint robotTex;
@@ -62,20 +67,20 @@ void display()
 
     glEnd();
     /*
-    glColor4f(1.0,1.0,1.0,0.3)
-    glBegin(GL_TRIANGLE_FAN);
-    int i;
-    glVertex3f(0,0,0);
-    for(i=0; i<100; i++) {
-        glVertex3f(
+       glColor4f(1.0,1.0,1.0,0.3)
+       glBegin(GL_TRIANGLE_FAN);
+       int i;
+       glVertex3f(0,0,0);
+       for(i=0; i<100; i++) {
+       glVertex3f(
 
 
-    }
+       }
 
 
-    glEnd();
+       glEnd();
 
-    */
+*/
     glPopMatrix();
 
 
@@ -86,17 +91,17 @@ void display()
 
 int main(int argc, char **argv)
 {
-    int var ;
     /*
-    sigset_t set;
-    int sig;
-    sigemptyset(&set);
-    sigaddset(&set, SIGUSR1);
-    sigwait(&set , &sig);
-    cout << sig << endl;
-    */
-    cin >> var;
-    cout << var << endl;
+       sigset_t set;
+       int sig;
+       sigemptyset(&set);
+       sigaddset(&set, SIGUSR1);
+       sigwait(&set , &sig);
+       cout << sig << endl;
+       */
+    distance_goal =0;
+    signal(SIGUSR1, signal_handler);
+    kill(getppid(), SIGUSR1);
     if (argc == 6) {
         position[0] = strtof(argv[1],NULL);
         position[1] = strtof(argv[2],NULL);
@@ -139,9 +144,48 @@ int main(int argc, char **argv)
     fieldTex = loadBMP_custom("res/field.bmp");
     robotTex = loadBMP_custom("res/logo.bmp");
 
+
+    glutTimerFunc(0,timer,0);
     glutMainLoop();
 
     return 0;
+}
+
+void timer(int value) {
+    if (distance_goal < -0.01) {
+        distance_goal += 0.005;
+        move(false);
+    }
+    else if (distance_goal > 0.01) {
+        distance_goal -= 0.005;
+        move(true);
+    }
+    else
+        distance_goal = 0;
+    glutPostRedisplay();
+    glutTimerFunc(16, timer, 0);
+}
+
+void move(bool way) {
+    if (way) {
+        position[0] -= 0.005*sin(PI*angle/180);
+        position[1] += 0.005*cos(PI*angle/180);
+    }
+    else {
+        position[0] += 0.005*sin(PI*angle/180);
+        position[1] -= 0.005*cos(PI*angle/180);
+    }
+}
+
+
+void signal_handler(int signum) {
+    cin >> distance_goal;
+    //kill(getppid(), SIGCHLD);
+    if (distance_goal >= 0)
+        cout << "The robot is moving "<< distance_goal <<" meter forward."<< endl;
+    else
+        cout << "The robot is moving "<< -distance_goal <<" meter backward."<< endl;
+
 }
 
 void keyboard(unsigned char key, int x, int y) {
@@ -162,8 +206,6 @@ void keyboard(unsigned char key, int x, int y) {
     else if (key == 'd') {
         angle -= 2;
     }
-    glutPostRedisplay();
-    glutPostRedisplay();
     glutPostRedisplay();
 }
 
