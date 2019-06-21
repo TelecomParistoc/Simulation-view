@@ -180,7 +180,6 @@ void move(bool way) {
 
 void signal_handler(int signum) {
     cin >> distance_goal;
-    //kill(getppid(), SIGCHLD);
     if (distance_goal >= 0)
         cout << "The robot is moving "<< distance_goal <<" meter forward."<< endl;
     else

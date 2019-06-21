@@ -26,11 +26,10 @@ class Model:
         self.check_number(distance) #checker si c'est la bonne unité
         signal(SIGUSR1, lambda x, y:None)
         self.view.stdin.write(str.encode(''+str(distance)+'\n'))
-        #self.view.communicate(str.encode(''+str(distance)+'\n'))
+        self.view.stdin.flush()
 
 
 test = Model()
-sleep(2)
 test.move(0.8)
-sleep(5)
+sleep(2)
 test.move(-0.8)
