@@ -36,6 +36,8 @@ class Model:
 
 
 test = Model()
-test.move(0.8)
+test.turn(70)
 sleep(2)
 test.move(-0.8)
+sleep(2)
+test.move(0.8)

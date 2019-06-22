@@ -13,6 +13,7 @@ GLuint loadBMP_custom(const char * imagepath);
 void timer (int value);
 void signal_handler(int signum);
 void move(bool way);
+void turn(bool way);
 
 using namespace std;
 
@@ -26,6 +27,7 @@ float angle;
 float size [2];
 
 float distance_goal;
+float angle_goal;
 
 GLuint fieldTex;
 GLuint robotTex;
@@ -99,7 +101,8 @@ int main(int argc, char **argv)
        sigwait(&set , &sig);
        cout << sig << endl;
        */
-    distance_goal =0;
+    distance_goal = 0;
+    angle_goal = 0;
     signal(SIGUSR1, signal_handler);
     kill(getppid(), SIGUSR1);
     if (argc == 6) {
@@ -162,6 +165,18 @@ void timer(int value) {
     }
     else
         distance_goal = 0;
+
+    if(angle_goal < -1) {
+        angle_goal +=0.5;
+        turn(true);
+    }
+    else if(angle_goal > 1) {
+        angle_goal -=0.5;
+        turn(false);
+    }
+    else
+        angle_goal = 0;
+
     glutPostRedisplay();
     glutTimerFunc(16, timer, 0);
 }
@@ -177,20 +192,27 @@ void move(bool way) {
     }
 }
 
+void turn(bool way) {
+    if (way)
+        angle += 0.5;
+    else
+        angle -= 0.5;
+}
 
 void signal_handler(int signum) {
     char data_in[9];
     cin >> data_in;
     if (*data_in == 'm') {
 
-        distance_goal =strtof(data_in +1,NULL);
+        distance_goal = strtof(data_in +1,NULL);
         if (distance_goal >= 0)
-            cout << "The robot is moving "<< distance_goal <<" meter forward."<< endl;
+            cout << "The robot is moving "<< distance_goal <<" meter(s) forward"<< endl;
         else
-            cout << "The robot is moving "<< -distance_goal <<" meter backward."<< endl;
+            cout << "The robot is moving "<< -distance_goal <<" meter(s) backward"<< endl;
     }
     else if(*data_in == 't') {
-        //TO DO
+        angle_goal = strtof(data_in+1,NULL);
+        cout << "The robot is rotating by " << angle_goal << " degree(s)" << endl;
     }
     else
         cout << "view: the instruction '" <<data_in << "' is not recognized"<< endl;
