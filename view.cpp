@@ -179,11 +179,21 @@ void move(bool way) {
 
 
 void signal_handler(int signum) {
-    cin >> distance_goal;
-    if (distance_goal >= 0)
-        cout << "The robot is moving "<< distance_goal <<" meter forward."<< endl;
+    char data_in[9];
+    cin >> data_in;
+    if (*data_in == 'm') {
+
+        distance_goal =strtof(data_in +1,NULL);
+        if (distance_goal >= 0)
+            cout << "The robot is moving "<< distance_goal <<" meter forward."<< endl;
+        else
+            cout << "The robot is moving "<< -distance_goal <<" meter backward."<< endl;
+    }
+    else if(*data_in == 't') {
+        //TO DO
+    }
     else
-        cout << "The robot is moving "<< -distance_goal <<" meter backward."<< endl;
+        cout << "view: the instruction '" <<data_in << "' is not recognized"<< endl;
 
 }
 

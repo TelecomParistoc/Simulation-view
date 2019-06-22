@@ -22,11 +22,17 @@ class Model:
         assert(isinstance(x, int) or isinstance(x, float))
 
     def move(self, distance, callback = lambda: None):
-        self.view.send_signal(SIGUSR1)
         self.check_number(distance) #checker si c'est la bonne unité
-        signal(SIGUSR1, lambda x, y:None)
-        self.view.stdin.write(str.encode(''+str(distance)+'\n'))
+        self.view.send_signal(SIGUSR1)
+        self.view.stdin.write(str.encode('m'+str(distance)+'\n'))
         self.view.stdin.flush()
+
+    def turn(self, heading, callback = lambda: None):
+        self.check_number(heading)
+        self.view.send_signal(SIGUSR1)
+        self.view.stdin.write(str.encode('t'+str(heading)+'\n'))
+        self.view.stdin.flush()
+
 
 
 test = Model()

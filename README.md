@@ -25,6 +25,6 @@ GLuint loadBMP_custom(const char * imagepath);
 ```
 need to be 24 bit bitmpas.
 
-You can convert your image with the command line 'convert' or on [online-converting](https://online-converting.com/image/convert2bmp/).
+You can convert your image with the command line `convert` or on [online-converting](https://online-converting.com/image/convert2bmp/).
 
 
