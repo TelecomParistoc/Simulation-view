@@ -8,6 +8,10 @@ On Debian or Ubuntu, use the package manager apt to install libgl1-mesa-dev and 
 ```bash
 sudo apt install libgl1-mesa-dev freeglut3-dev
 ```
+On Arch install mesa and freeglut.
+```bash
+sudo pacman -S mesa freeglut
+```
 Clone the git repositry.
 Use `make` to compile the code.
 ## Usage
