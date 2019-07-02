@@ -37,6 +37,15 @@ class Model:
         self.view.stdin.flush()
         self.callback = callback
 
+    def moveTo(x, y, goalAngle, callback = lambda: None):
+        self.check_number(x)
+        self.check_number(y)
+        self.check_number(goalAngle)
+        self.view.send_signal(SIGUSR1)
+        self.view.stdin.write(str.encode('o'+str(x)+' '+str(y)+' '+str(goalAngle)'\n'))
+        self.view.stdin.flush()
+        self.callback = callback
+
     def callback_handler(self, signum, stf) :
         self.callback()
 

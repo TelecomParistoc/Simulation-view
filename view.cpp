@@ -234,6 +234,9 @@ void signal_handler(int signum) {
         angle_goal = strtof(data_in+1,NULL);
         cout << "The robot is rotating by " << angle_goal << " degree(s)" << endl;
     }
+    else if(*data_in == 'o') {
+        //TO DO
+    }
     else
         cout << "view: the instruction '" <<data_in << "' is not recognized"<< endl;
 
