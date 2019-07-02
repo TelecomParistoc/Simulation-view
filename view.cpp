@@ -31,6 +31,11 @@ float angle_goal;
 
 GLuint fieldTex;
 GLuint robotTex;
+
+bool distance_callback_is_sent;
+bool angle_callback_is_sent;
+pid_t ppid;
+
 void display()
 {
     // Set Background Color
@@ -103,8 +108,11 @@ int main(int argc, char **argv)
        */
     distance_goal = 0;
     angle_goal = 0;
+    distance_callback_is_sent = true;
+    angle_callback_is_sent = true;
     signal(SIGUSR1, signal_handler);
-    kill(getppid(), SIGUSR1);
+    ppid = getppid();
+    kill(ppid, SIGUSR1);
     if (argc == 6) {
         position[0] = strtof(argv[1],NULL);
         position[1] = strtof(argv[2],NULL);
@@ -163,8 +171,13 @@ void timer(int value) {
         distance_goal -= 0.005;
         move(true);
     }
-    else
+    else{
         distance_goal = 0;
+        if (!distance_callback_is_sent) {
+            distance_callback_is_sent = true;
+            kill(ppid, SIGUSR1);
+        }
+    }
 
     if(angle_goal < -1) {
         angle_goal +=0.5;
@@ -174,8 +187,14 @@ void timer(int value) {
         angle_goal -=0.5;
         turn(false);
     }
-    else
+    else {
         angle_goal = 0;
+        if (!angle_callback_is_sent) {
+            angle_callback_is_sent = true;
+            kill(ppid, SIGUSR1);
+        }
+    }
+
 
     glutPostRedisplay();
     glutTimerFunc(16, timer, 0);
@@ -203,7 +222,7 @@ void signal_handler(int signum) {
     char data_in[9];
     cin >> data_in;
     if (*data_in == 'm') {
-
+        distance_callback_is_sent = false;
         distance_goal = strtof(data_in +1,NULL);
         if (distance_goal >= 0)
             cout << "The robot is moving "<< distance_goal <<" meter(s) forward"<< endl;
@@ -211,6 +230,7 @@ void signal_handler(int signum) {
             cout << "The robot is moving "<< -distance_goal <<" meter(s) backward"<< endl;
     }
     else if(*data_in == 't') {
+        angle_callback_is_sent = false;
         angle_goal = strtof(data_in+1,NULL);
         cout << "The robot is rotating by " << angle_goal << " degree(s)" << endl;
     }
