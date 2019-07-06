@@ -37,12 +37,12 @@ class Model:
         self.view.stdin.flush()
         self.callback = callback
 
-    def moveTo(x, y, goalAngle, callback = lambda: None):
+    def moveTo(self, x, y, goalAngle, callback = lambda: None):
         self.check_number(x)
         self.check_number(y)
         self.check_number(goalAngle)
         self.view.send_signal(SIGUSR1)
-        self.view.stdin.write(str.encode('o'+str(x)+' '+str(y)+' '+str(goalAngle)+'\n'))
+        self.view.stdin.write(str.encode('o'+str(x)+'/'+str(y)+'/'+str(goalAngle)+'\n'))
         self.view.stdin.flush()
         self.callback = callback
 
@@ -55,12 +55,6 @@ def test_callback():
     print("test callback")
 
 test = Model()
-sleep(2)
-test.turn(50,test_callback)
+sleep(1)
+test.moveTo(600,300,0,test_callback)
 sleep(3)
-test.move(-800,test_callback)
-sleep(2)
-test.move(800,test_callback)
-sleep(3)
-test.turn(-50, test_callback)
-sleep(2)

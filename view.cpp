@@ -5,6 +5,10 @@
 #include <iostream>
 #include <unistd.h>
 #include <csignal>
+#include <queue>
+extern "C" {
+#include "queue.h"
+}
 
 #define angleDiff(a, b) (abs(a-b) % 360 <= 180 ? (abs(a-b) % 360) : 360 - (abs(a-b) % 360))
 void keyboard(unsigned char key, int x, int y);
@@ -27,15 +31,15 @@ int current_angle;
 //Size of the robot
 int size [2];
 
-int distance_goal;
-int goal_angle;
+int goal_value;
+char current_movement;
 int number_of_movement;
+queue<char> movements;
+queue<int> values;
 
 GLuint fieldTex;
 GLuint robotTex;
 
-bool distance_callback_is_sent;
-bool angle_callback_is_sent;
 pid_t ppid;
 
 void display()
@@ -112,10 +116,8 @@ int main(int argc, char **argv)
        sigwait(&set , &sig);
        cout << sig << endl;
        */
-    distance_goal = 0;
-    goal_angle = 0;
-    distance_callback_is_sent = true;
-    angle_callback_is_sent = true;
+    goal_value = 0;
+    number_of_movement = 0;
     signal(SIGUSR1, signal_handler);
     ppid = getppid();
     kill(ppid, SIGUSR1);
@@ -169,46 +171,62 @@ int main(int argc, char **argv)
 }
 
 void timer(int value) {
-   move();
-   turn();
-    glutPostRedisplay();
+    if (number_of_movement != 0){
+        switch(current_movement) {
+            case('m'): move();
+                       break;
+            case('t'): turn();
+                       break;
+        }
+        glutPostRedisplay();
+    }
     glutTimerFunc(16, timer, 0);
 }
 
 void move() {
-    if (distance_goal < -2) {
-        distance_goal += 5;
+    if (goal_value < -2) {
+        goal_value += 5;
         position[0] += (int)(5*sin(M_PI*current_angle/180));
         position[1] -= (int)(5*cos(M_PI*current_angle/180));
     }
-    else if (distance_goal > 2) {
-        distance_goal -= 5;
+    else if (goal_value > 2) {
+        goal_value -= 5;
         position[0] -= (int)(5*sin(M_PI*current_angle/180));
         position[1] += (int)(5*cos(M_PI*current_angle/180));
     }
     else{
-        distance_goal = 0;
-        if (!distance_callback_is_sent) {
-            distance_callback_is_sent = true;
+        goal_value = 0;
+        number_of_movement -=1;
+        if (number_of_movement == 0)
             kill(ppid, SIGUSR1);
+        else {
+            current_movement = movements.front();
+            movements.pop();
+            goal_value = values.front();
+            values.pop();
         }
     }
 }
 
 void turn() {
-    if(goal_angle < 0) {
-        goal_angle +=1;
+    if(goal_value < 0) {
+        goal_value +=1;
         current_angle += 1;
     }
-    else if(goal_angle > 0) {
-        goal_angle -=1;
+    else if(goal_value > 0) {
+        goal_value -=1;
         current_angle -=1;
     }
     else {
-        goal_angle = 0;
-        if (!angle_callback_is_sent) {
-            angle_callback_is_sent = true;
+        goal_value = 0;
+        number_of_movement -=1;
+        if (number_of_movement == 0)
             kill(ppid, SIGUSR1);
+        else {
+            current_movement = movements.front();
+            movements.pop();
+            goal_value = values.front();
+            values.pop();
         }
     }
 }
@@ -240,32 +258,40 @@ void moveTo(int x, int y, int goalAngle) {
     if (angle < 0) angle += 360;
     if (angle >= 360) angle -= 360;
 
-    distance_goal = forward * sqrt(deltaX * deltaX + deltaY * deltaY);
-    goal_angle = goalAngle;
-    //turn(angle, startRotationDone);
+    goal_value = angle;
+    values.push(forward * sqrt(deltaX * deltaX + deltaY * deltaY));
+    values.push(goalAngle);
+    current_movement = 't';
+    movements.push('m');
+    movements.push('t');
+    number_of_movement = 3;
+
 }
 
 void signal_handler(int signum) {
-    char data_in[9];
+    char data_in[30];
     cin >> data_in;
     switch(*data_in) {
         case 'm': {
-                      distance_callback_is_sent = false;
-                      distance_goal = stoi(data_in +1,NULL);
-                      if (distance_goal >= 0)
-                          cout << "The robot is moving "<< distance_goal <<" millimeter(s) forward"<< endl;
+                      goal_value = stoi(data_in +1,NULL);
+                      number_of_movement = 1;
+                      current_movement = 'm';
+                      if (goal_value >= 0)
+                          cout << "The robot is moving "<< goal_value <<" millimeter(s) forward"<< endl;
                       else
-                          cout << "The robot is moving "<< -distance_goal <<" millimeter(s) backward"<< endl;
+                          cout << "The robot is moving "<< -goal_value <<" millimeter(s) backward"<< endl;
                   } break;
         case 't': {
-                      angle_callback_is_sent = false;
-                      goal_angle = stoi(data_in+1,NULL);
-                      cout << "The robot is rotating by " << goal_angle << " degree(s)" << endl;
+                      goal_value = stoi(data_in+1,NULL);
+                      number_of_movement = 1;
+                      current_movement = 't';
+                      cout << "The robot is rotating by " << goal_value << " degree(s)" << endl;
                   } break;
         case 'o': {
-                      int x = stoi(strtok(data_in + 1, " "), NULL);
-                      int y = stoi(strtok(NULL," "), NULL);
-                      int goalAngle = stoi(strtok(NULL, " "), NULL);
+                      int x = stoi(strtok(data_in + 1, "/"), NULL);
+                      int y = stoi(strtok(NULL,"/"), NULL);
+                      int goalAngle = stoi(strtok(NULL, "/"), NULL);
+                      moveTo(x,y,goalAngle);
                   } break;
         default:
                   cout << "view: the instruction '" <<data_in << "' is not recognized"<< endl;
