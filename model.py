@@ -7,7 +7,7 @@ from time import sleep
 
 class Model:
 
-    def __init__(self, xPos=0, yPos=0, angle=0, xSize=0.25, ySize=0.25):
+    def __init__(self, xPos=0, yPos=0, angle=0, xSize=250, ySize=250):
         self.xPos = xPos
         self.yPos = yPos
         self.angle = angle
@@ -42,7 +42,7 @@ class Model:
         self.check_number(y)
         self.check_number(goalAngle)
         self.view.send_signal(SIGUSR1)
-        self.view.stdin.write(str.encode('o'+str(x)+' '+str(y)+' '+str(goalAngle)'\n'))
+        self.view.stdin.write(str.encode('o'+str(x)+' '+str(y)+' '+str(goalAngle)+'\n'))
         self.view.stdin.flush()
         self.callback = callback
 
@@ -55,11 +55,12 @@ def test_callback():
     print("test callback")
 
 test = Model()
-test.turn(70,test_callback)
-sleep(3)
-test.move(-0.8,test_callback)
 sleep(2)
-test.move(0.8,test_callback)
+test.turn(50,test_callback)
+sleep(3)
+test.move(-800,test_callback)
+sleep(2)
+test.move(800,test_callback)
 sleep(3)
 test.turn(-50, test_callback)
 sleep(2)

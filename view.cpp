@@ -1,4 +1,3 @@
-#define PI 3.14159265
 #include "GL/freeglut.h"
 #include "GL/gl.h"
 #include <cstring>
@@ -7,27 +6,30 @@
 #include <unistd.h>
 #include <csignal>
 
+#define angleDiff(a, b) (abs(a-b) % 360 <= 180 ? (abs(a-b) % 360) : 360 - (abs(a-b) % 360))
 void keyboard(unsigned char key, int x, int y);
 void reshape(int width, int height);
 GLuint loadBMP_custom(const char * imagepath);
 void timer (int value);
 void signal_handler(int signum);
-void move(bool way);
-void turn(bool way);
+void move();
+void turn();
+void moveTo(int x, int y, int goalAngle);
 
 using namespace std;
 
 //Position of the robot
-float position [2];
+int position [2];
 
 //Angle of the robot
-float angle;
+int current_angle;
 
 //Size of the robot
-float size [2];
+int size [2];
 
-float distance_goal;
-float angle_goal;
+int distance_goal;
+int goal_angle;
+int number_of_movement;
 
 GLuint fieldTex;
 GLuint robotTex;
@@ -38,6 +40,10 @@ pid_t ppid;
 
 void display()
 {
+    float x_size = size[0]/1000.0;
+    float y_size = size[1]/1000.0;
+    float x_pos = position[0]/1000.0;
+    float y_pos = position[1]/1000.0;
     // Set Background Color
     glClearColor(0, 0, 0, 1.0);
     // Clear screen
@@ -59,18 +65,18 @@ void display()
 
     glBindTexture(GL_TEXTURE_2D, robotTex);
     glPushMatrix();
-    glTranslatef(position[0],position[1],0);
-    glRotatef(angle,0,0,1);
+    glTranslatef(x_pos,y_pos,0);
+    glRotatef(current_angle,0,0,1);
 
     glBegin(GL_TRIANGLES);
 
-    glTexCoord2f(0.0f, 1.0f); glVertex3f(-size[0]/2,size[1]/2,-2);
-    glTexCoord2f(0.0f, 0.0f); glVertex3f(-size[0]/2,-size[1]/2,-2);
-    glTexCoord2f(1.0f, 0.0f); glVertex3f(size[0]/2,-size[1]/2,-2);
+    glTexCoord2f(0.0f, 1.0f); glVertex3f(-x_size/2,y_size/2,-2);
+    glTexCoord2f(0.0f, 0.0f); glVertex3f(-x_size/2,-y_size/2,-2);
+    glTexCoord2f(1.0f, 0.0f); glVertex3f(x_size/2,-y_size/2,-2);
 
-    glTexCoord2f(0.0f, 1.0f); glVertex3f(-size[0]/2,size[1]/2,-2);
-    glTexCoord2f(1.0f, 1.0f); glVertex3f(size[0]/2,size[1]/2,-2);
-    glTexCoord2f(1.0f, 0.0f); glVertex3f(size[0]/2,-size[1]/2,-2);
+    glTexCoord2f(0.0f, 1.0f); glVertex3f(-x_size/2,y_size/2,-2);
+    glTexCoord2f(1.0f, 1.0f); glVertex3f(x_size/2,y_size/2,-2);
+    glTexCoord2f(1.0f, 0.0f); glVertex3f(x_size/2,-y_size/2,-2);
 
     glEnd();
     /*
@@ -107,18 +113,18 @@ int main(int argc, char **argv)
        cout << sig << endl;
        */
     distance_goal = 0;
-    angle_goal = 0;
+    goal_angle = 0;
     distance_callback_is_sent = true;
     angle_callback_is_sent = true;
     signal(SIGUSR1, signal_handler);
     ppid = getppid();
     kill(ppid, SIGUSR1);
     if (argc == 6) {
-        position[0] = strtof(argv[1],NULL);
-        position[1] = strtof(argv[2],NULL);
-        angle = strtof(argv[3],NULL);
-        size[0] = strtof(argv[4],NULL);
-        size[1] = strtof(argv[5],NULL);
+        position[0] = stoi(argv[1]);
+        position[1] = stoi(argv[2]);
+        current_angle = stoi(argv[3],NULL);
+        size[0] = stoi(argv[4]);
+        size[1] = stoi(argv[5]);
     } else {
         cout << "Wrong number of arguments, ./view needs 5 arguments" << endl;
         return(1);
@@ -163,13 +169,22 @@ int main(int argc, char **argv)
 }
 
 void timer(int value) {
-    if (distance_goal < -0.01) {
-        distance_goal += 0.005;
-        move(false);
+   move();
+   turn();
+    glutPostRedisplay();
+    glutTimerFunc(16, timer, 0);
+}
+
+void move() {
+    if (distance_goal < -2) {
+        distance_goal += 5;
+        position[0] += (int)(5*sin(M_PI*current_angle/180));
+        position[1] -= (int)(5*cos(M_PI*current_angle/180));
     }
-    else if (distance_goal > 0.01) {
-        distance_goal -= 0.005;
-        move(true);
+    else if (distance_goal > 2) {
+        distance_goal -= 5;
+        position[0] -= (int)(5*sin(M_PI*current_angle/180));
+        position[1] += (int)(5*cos(M_PI*current_angle/180));
     }
     else{
         distance_goal = 0;
@@ -178,67 +193,84 @@ void timer(int value) {
             kill(ppid, SIGUSR1);
         }
     }
+}
 
-    if(angle_goal < -1) {
-        angle_goal +=0.5;
-        turn(true);
+void turn() {
+    if(goal_angle < 0) {
+        goal_angle +=1;
+        current_angle += 1;
     }
-    else if(angle_goal > 1) {
-        angle_goal -=0.5;
-        turn(false);
+    else if(goal_angle > 0) {
+        goal_angle -=1;
+        current_angle -=1;
     }
     else {
-        angle_goal = 0;
+        goal_angle = 0;
         if (!angle_callback_is_sent) {
             angle_callback_is_sent = true;
             kill(ppid, SIGUSR1);
         }
     }
-
-
-    glutPostRedisplay();
-    glutTimerFunc(16, timer, 0);
 }
 
-void move(bool way) {
-    if (way) {
-        position[0] -= 0.005*sin(PI*angle/180);
-        position[1] += 0.005*cos(PI*angle/180);
-    }
-    else {
-        position[0] += 0.005*sin(PI*angle/180);
-        position[1] -= 0.005*cos(PI*angle/180);
-    }
-}
+// moveTo is almost the dame function as the function in: libmotors/src/motion.c
 
-void turn(bool way) {
-    if (way)
-        angle += 0.5;
-    else
-        angle -= 0.5;
+void moveTo(int x, int y, int goalAngle) {
+    cout <<"Moving to (" << x <<", " << y << ")"<<endl;
+    // compute coordinates of the start to end vector
+    int deltaX = x - position[0], deltaY = y - position[1];
+
+    // compute heading the robot should have to go to its destination forward
+    int angle = atan2(deltaY, deltaX)*180.0/M_PI;
+    while(angle >= 360) angle -= 360;
+    while(angle < 0) angle += 360;
+
+    //we want to minimize the total rotation (ie the rotation before and after the translation)
+    int current_heading = current_angle;
+    float rotation_if_forward = abs(angleDiff(angle, current_heading));
+    float rotation_if_backward = abs(angleDiff(angle + 180, current_heading));
+    if (goalAngle != -1) {
+        rotation_if_forward += abs(angleDiff(angle, goalAngle));
+        rotation_if_backward += abs(angleDiff(angle + 180, goalAngle));
+    }
+    int forward = (rotation_if_backward < rotation_if_forward ? -1 : +1);
+
+    // save distance and end angle then start to movement
+    if (forward == -1) angle = angle + 180;
+    if (angle < 0) angle += 360;
+    if (angle >= 360) angle -= 360;
+
+    distance_goal = forward * sqrt(deltaX * deltaX + deltaY * deltaY);
+    goal_angle = goalAngle;
+    //turn(angle, startRotationDone);
 }
 
 void signal_handler(int signum) {
     char data_in[9];
     cin >> data_in;
-    if (*data_in == 'm') {
-        distance_callback_is_sent = false;
-        distance_goal = strtof(data_in +1,NULL);
-        if (distance_goal >= 0)
-            cout << "The robot is moving "<< distance_goal <<" meter(s) forward"<< endl;
-        else
-            cout << "The robot is moving "<< -distance_goal <<" meter(s) backward"<< endl;
+    switch(*data_in) {
+        case 'm': {
+                      distance_callback_is_sent = false;
+                      distance_goal = stoi(data_in +1,NULL);
+                      if (distance_goal >= 0)
+                          cout << "The robot is moving "<< distance_goal <<" millimeter(s) forward"<< endl;
+                      else
+                          cout << "The robot is moving "<< -distance_goal <<" millimeter(s) backward"<< endl;
+                  } break;
+        case 't': {
+                      angle_callback_is_sent = false;
+                      goal_angle = stoi(data_in+1,NULL);
+                      cout << "The robot is rotating by " << goal_angle << " degree(s)" << endl;
+                  } break;
+        case 'o': {
+                      int x = stoi(strtok(data_in + 1, " "), NULL);
+                      int y = stoi(strtok(NULL," "), NULL);
+                      int goalAngle = stoi(strtok(NULL, " "), NULL);
+                  } break;
+        default:
+                  cout << "view: the instruction '" <<data_in << "' is not recognized"<< endl;
+                  break;
     }
-    else if(*data_in == 't') {
-        angle_callback_is_sent = false;
-        angle_goal = strtof(data_in+1,NULL);
-        cout << "The robot is rotating by " << angle_goal << " degree(s)" << endl;
-    }
-    else if(*data_in == 'o') {
-        //TO DO
-    }
-    else
-        cout << "view: the instruction '" <<data_in << "' is not recognized"<< endl;
 
 }
 
@@ -247,18 +279,18 @@ void keyboard(unsigned char key, int x, int y) {
         glutLeaveMainLoop();
     }
     else if (key == 'z') {
-        position[0] -= 0.05*sin(PI*angle/180);
-        position[1] += 0.05*cos(PI*angle/180);
+        position[0] -= (int)(50*sin(M_PI*current_angle/180));
+        position[1] += (int)(50*cos(M_PI*current_angle/180));
     }
     else if (key == 's') {
-        position[0] += 0.05*sin(PI*angle/180);
-        position[1] -= 0.05*cos(PI*angle/180);
+        position[0] += (int)(50*sin(M_PI*current_angle/180));
+        position[1] -= (int)(50*cos(M_PI*current_angle/180));
     }
     else if (key == 'q') {
-        angle += 2;
+        current_angle += 2;
     }
     else if (key == 'd') {
-        angle -= 2;
+        current_angle -= 2;
     }
     glutPostRedisplay();
 }
@@ -337,4 +369,3 @@ GLuint loadBMP_custom(const char * imagepath) {
 
     return texture;
 }
-
