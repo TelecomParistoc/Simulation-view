@@ -5,6 +5,7 @@
 #include <iostream>
 #include <unistd.h>
 #include <csignal>
+#include <cstdlib>
 #include <queue>
 extern "C" {
 #include "queue.h"
@@ -27,6 +28,7 @@ int position [2];
 
 //Angle of the robot
 int current_angle;
+int first_angle;
 
 //Size of the robot
 int size [2];
@@ -37,6 +39,8 @@ int number_of_movement;
 queue<char> movements;
 queue<int> values;
 
+FILE * info_file;
+
 GLuint fieldTex;
 GLuint robotTex;
 
@@ -46,8 +50,8 @@ void display()
 {
     float x_size = size[0]/1000.0;
     float y_size = size[1]/1000.0;
-    float x_pos = position[0]/1000.0;
-    float y_pos = position[1]/1000.0;
+    float x_pos = position[0]/1000.0-1.5;
+    float y_pos = position[1]/1000.0-1;
     // Set Background Color
     glClearColor(0, 0, 0, 1.0);
     // Clear screen
@@ -70,7 +74,7 @@ void display()
     glBindTexture(GL_TEXTURE_2D, robotTex);
     glPushMatrix();
     glTranslatef(x_pos,y_pos,0);
-    glRotatef(current_angle,0,0,1);
+    glRotatef(current_angle-90,0,0,1);
 
     glBegin(GL_TRIANGLES);
 
@@ -108,29 +112,29 @@ void display()
 
 int main(int argc, char **argv)
 {
-    /*
-       sigset_t set;
-       int sig;
-       sigemptyset(&set);
-       sigaddset(&set, SIGUSR1);
-       sigwait(&set , &sig);
-       cout << sig << endl;
-       */
     goal_value = 0;
     number_of_movement = 0;
     signal(SIGUSR1, signal_handler);
     ppid = getppid();
     kill(ppid, SIGUSR1);
+
     if (argc == 6) {
         position[0] = stoi(argv[1]);
         position[1] = stoi(argv[2]);
         current_angle = stoi(argv[3],NULL);
+        first_angle = current_angle;
         size[0] = stoi(argv[4]);
         size[1] = stoi(argv[5]);
     } else {
         cout << "Wrong number of arguments, ./view needs 5 arguments" << endl;
         return(1);
     }
+    info_file = fopen("tmp.txt","w");
+    if (info_file == NULL) {
+        perror("Error");
+        return -1;
+    }
+
 
     cout << "### Press c to close the Simulation view" << endl;
     glutInit(&argc, argv);
@@ -184,15 +188,16 @@ void timer(int value) {
 }
 
 void move() {
+    float real_angle = M_PI*(current_angle-90)/180;
     if (goal_value < -2) {
         goal_value += 5;
-        position[0] += (int)(5*sin(M_PI*current_angle/180));
-        position[1] -= (int)(5*cos(M_PI*current_angle/180));
+        position[0] += (int)(5*sin(real_angle));
+        position[1] -= (int)(5*cos(real_angle));
     }
     else if (goal_value > 2) {
         goal_value -= 5;
-        position[0] -= (int)(5*sin(M_PI*current_angle/180));
-        position[1] += (int)(5*cos(M_PI*current_angle/180));
+        position[0] -= (int)(5*sin(real_angle));
+        position[1] += (int)(5*cos(real_angle));
     }
     else{
         goal_value = 0;
@@ -211,11 +216,11 @@ void move() {
 void turn() {
     if(goal_value < 0) {
         goal_value +=1;
-        current_angle += 1;
+        current_angle -= 1;
     }
     else if(goal_value > 0) {
         goal_value -=1;
-        current_angle -=1;
+        current_angle +=1;
     }
     else {
         goal_value = 0;
@@ -234,6 +239,7 @@ void turn() {
 // moveTo is almost the dame function as the function in: libmotors/src/motion.c
 
 void moveTo(int x, int y, int goalAngle) {
+    //cout << current_angle <<endl;
     cout <<"Moving to (" << x <<", " << y << ")"<<endl;
     // compute coordinates of the start to end vector
     int deltaX = x - position[0], deltaY = y - position[1];
@@ -243,10 +249,13 @@ void moveTo(int x, int y, int goalAngle) {
     while(angle >= 360) angle -= 360;
     while(angle < 0) angle += 360;
 
+    cout<<angle <<endl;
     //we want to minimize the total rotation (ie the rotation before and after the translation)
     int current_heading = current_angle;
     float rotation_if_forward = abs(angleDiff(angle, current_heading));
+    //cout<<rotation_if_forward <<endl;
     float rotation_if_backward = abs(angleDiff(angle + 180, current_heading));
+    //cout<<rotation_if_backward <<endl;
     if (goalAngle != -1) {
         rotation_if_forward += abs(angleDiff(angle, goalAngle));
         rotation_if_backward += abs(angleDiff(angle + 180, goalAngle));
@@ -257,10 +266,11 @@ void moveTo(int x, int y, int goalAngle) {
     if (forward == -1) angle = angle + 180;
     if (angle < 0) angle += 360;
     if (angle >= 360) angle -= 360;
-
-    goal_value = angle;
+    //cout<< goalAngle <<endl;
+    //cout << angle <<endl;
+    goal_value = angle-current_angle;
     values.push(forward * sqrt(deltaX * deltaX + deltaY * deltaY));
-    values.push(goalAngle);
+    values.push(goalAngle+first_angle);
     current_movement = 't';
     movements.push('m');
     movements.push('t');
@@ -282,7 +292,7 @@ void signal_handler(int signum) {
                           cout << "The robot is moving "<< -goal_value <<" millimeter(s) backward"<< endl;
                   } break;
         case 't': {
-                      goal_value = stoi(data_in+1,NULL);
+                      goal_value = stoi(data_in+1,NULL)-current_angle+first_angle;
                       number_of_movement = 1;
                       current_movement = 't';
                       cout << "The robot is rotating by " << goal_value << " degree(s)" << endl;
@@ -303,6 +313,7 @@ void signal_handler(int signum) {
 void keyboard(unsigned char key, int x, int y) {
     if (key == 'c') {
         glutLeaveMainLoop();
+        fclose(info_file);
     }
     else if (key == 'z') {
         position[0] -= (int)(50*sin(M_PI*current_angle/180));

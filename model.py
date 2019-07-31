@@ -32,6 +32,7 @@ class Model:
 
     def turn(self, heading, callback = lambda: None):
         self.check_number(heading)
+        #Put a condition on the heading >=0 && <360
         self.view.send_signal(SIGUSR1)
         self.view.stdin.write(str.encode('t'+str(heading)+'\n'))
         self.view.stdin.flush()
@@ -54,7 +55,15 @@ class Model:
 def test_callback():
     print("test callback")
 
-test = Model()
+test = Model(xPos = 1000, yPos = 1000, angle=90)
 sleep(1)
-test.moveTo(600,300,0,test_callback)
+test.turn(30,test_callback)
 sleep(3)
+test.turn(180,test_callback)
+sleep(3)
+test.moveTo(2000,2000,0)
+"""
+test.move(600)
+sleep(2)
+test.turn(600)
+"""
