@@ -11,7 +11,7 @@ static struct queueElement* queueTail = NULL;
 static int queueSize = 0;
 
 void addToQueue(void* elementPtr) {
-    struct queueElement* newElement = malloc(sizeof(struct queueElement));
+    struct queueElement* newElement = (queueElement*)(malloc(sizeof(struct queueElement)));
     newElement->content = elementPtr;
     newElement->nextElement = NULL;
     if(queueTail != NULL)

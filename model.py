@@ -15,7 +15,7 @@ class Model:
         self.ySize = ySize
         #self.robot = Robot(model=self)  #rajouter une réf à model dans robot
         signal(SIGUSR1, lambda signum, stf:None)
-        self.view = Popen(["./view",str(xPos), str(yPos), str(angle), str(xSize), str(ySize)], stdout=None, stdin=PIPE)
+        self.view = Popen(["./src/view",str(xPos), str(yPos), str(angle), str(xSize), str(ySize)], stdout=None, stdin=PIPE)
         pause() #Not on Windows
         self.callback = lambda: None
         signal(SIGUSR1, self.callback_handler)
@@ -55,13 +55,13 @@ class Model:
 def test_callback():
     print("test callback")
 
-test = Model(xPos = 1000, yPos = 1000, angle=90)
+test = Model(xPos = 1000, yPos = 1000, angle=0)
 sleep(1)
 test.turn(30,test_callback)
 sleep(3)
 test.turn(180,test_callback)
 sleep(3)
-test.moveTo(2000,2000,0)
+test.moveTo(2000,2000,180)
 """
 test.move(600)
 sleep(2)

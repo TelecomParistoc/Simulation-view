@@ -7,44 +7,71 @@
 #include <csignal>
 #include <cstdlib>
 #include <queue>
-extern "C" {
 #include "queue.h"
+#include "view.h"
+
+int main(int argc, char **argv)
+{
+    goal_value = 0;
+    number_of_movement = 0;
+    signal(SIGUSR1, signal_handler);
+    ppid = getppid();
+    kill(ppid, SIGUSR1);
+
+    if (argc == 6) {
+        position[0] = stoi(argv[1]);
+        position[1] = stoi(argv[2]);
+        current_angle = stoi(argv[3],NULL);
+        size[0] = stoi(argv[4]);
+        size[1] = stoi(argv[5]);
+    } else {
+        cout << "Wrong number of arguments, ./view needs 5 arguments" << endl;
+        return(1);
+    }
+    info_file = fopen("tmp.txt","w");
+    if (info_file == NULL) {
+        perror("Error");
+        return -1;
+    }
+
+
+    cout << "### Press c to close the Simulation view" << endl;
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+
+    glutInitWindowSize(900, 700);
+    glutInitWindowPosition(100, 100);
+
+    glutCreateWindow("OpenGL - Simulation view");
+    glutDisplayFunc(display);
+
+    glutReshapeFunc(reshape);
+
+    //Enable Z-buffer depth test
+    glEnable(GL_DEPTH_TEST);
+
+    glEnable(GL_TEXTURE_2D);
+
+    //Keyboard-events
+    glutKeyboardFunc(keyboard);
+
+    // after the closure of the window, the program keep going
+    glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);
+
+    // Projection transformation
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(-1.5, 1.5, -1.1667, 1.1667, 0, 4.0);
+
+    fieldTex = loadBMP_custom("res/field.bmp");
+    robotTex = loadBMP_custom("res/logo.bmp");
+
+
+    glutTimerFunc(0,timer,0);
+    glutMainLoop();
+
+    return 0;
 }
-
-#define angleDiff(a, b) (abs(a-b) % 360 <= 180 ? (abs(a-b) % 360) : 360 - (abs(a-b) % 360))
-void keyboard(unsigned char key, int x, int y);
-void reshape(int width, int height);
-GLuint loadBMP_custom(const char * imagepath);
-void timer (int value);
-void signal_handler(int signum);
-void move();
-void turn();
-void moveTo(int x, int y, int goalAngle);
-
-using namespace std;
-
-//Position of the robot
-int position [2];
-
-//Angle of the robot
-int current_angle;
-int first_angle;
-
-//Size of the robot
-int size [2];
-
-int goal_value;
-char current_movement;
-int number_of_movement;
-queue<char> movements;
-queue<int> values;
-
-FILE * info_file;
-
-GLuint fieldTex;
-GLuint robotTex;
-
-pid_t ppid;
 
 void display()
 {
@@ -107,71 +134,6 @@ void display()
 
 
     glutSwapBuffers(); // Because GLUT_DOUBLE
-}
-
-
-int main(int argc, char **argv)
-{
-    goal_value = 0;
-    number_of_movement = 0;
-    signal(SIGUSR1, signal_handler);
-    ppid = getppid();
-    kill(ppid, SIGUSR1);
-
-    if (argc == 6) {
-        position[0] = stoi(argv[1]);
-        position[1] = stoi(argv[2]);
-        current_angle = stoi(argv[3],NULL);
-        first_angle = current_angle;
-        size[0] = stoi(argv[4]);
-        size[1] = stoi(argv[5]);
-    } else {
-        cout << "Wrong number of arguments, ./view needs 5 arguments" << endl;
-        return(1);
-    }
-    info_file = fopen("tmp.txt","w");
-    if (info_file == NULL) {
-        perror("Error");
-        return -1;
-    }
-
-
-    cout << "### Press c to close the Simulation view" << endl;
-    glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-
-    glutInitWindowSize(900, 700);
-    glutInitWindowPosition(100, 100);
-
-    glutCreateWindow("OpenGL - Simulation view");
-    glutDisplayFunc(display);
-
-    glutReshapeFunc(reshape);
-
-    //Enable Z-buffer depth test
-    glEnable(GL_DEPTH_TEST);
-
-    glEnable(GL_TEXTURE_2D);
-
-    //Keyboard-events
-    glutKeyboardFunc(keyboard);
-
-    // after the closure of the window, the program keep going
-    glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);
-
-    // Projection transformation
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(-1.5, 1.5, -1.1667, 1.1667, 0, 4.0);
-
-    fieldTex = loadBMP_custom("res/field.bmp");
-    robotTex = loadBMP_custom("res/logo.bmp");
-
-
-    glutTimerFunc(0,timer,0);
-    glutMainLoop();
-
-    return 0;
 }
 
 void timer(int value) {
@@ -270,7 +232,7 @@ void moveTo(int x, int y, int goalAngle) {
     //cout << angle <<endl;
     goal_value = angle-current_angle;
     values.push(forward * sqrt(deltaX * deltaX + deltaY * deltaY));
-    values.push(goalAngle+first_angle);
+    values.push(goalAngle-angle);
     current_movement = 't';
     movements.push('m');
     movements.push('t');
@@ -292,7 +254,7 @@ void signal_handler(int signum) {
                           cout << "The robot is moving "<< -goal_value <<" millimeter(s) backward"<< endl;
                   } break;
         case 't': {
-                      goal_value = stoi(data_in+1,NULL)-current_angle+first_angle;
+                      goal_value = stoi(data_in+1,NULL)-current_angle;
                       number_of_movement = 1;
                       current_movement = 't';
                       cout << "The robot is rotating by " << goal_value << " degree(s)" << endl;
