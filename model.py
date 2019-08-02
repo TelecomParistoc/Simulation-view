@@ -15,7 +15,7 @@ class Model:
         self.ySize = ySize
         #self.robot = Robot(model=self)  #rajouter une réf à model dans robot
         signal(SIGUSR1, lambda signum, stf:None)
-        self.view = Popen(["./src/view",str(xPos), str(yPos), str(angle), str(xSize), str(ySize)], stdout=None, stdin=PIPE)
+        self.view = Popen(["./view",str(xPos), str(yPos), str(angle), str(xSize), str(ySize)], stdout=None, stdin=PIPE)
         pause() #Not on Windows
         self.callback = lambda: None
         signal(SIGUSR1, self.callback_handler)
