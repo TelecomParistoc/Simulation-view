@@ -1,31 +1,33 @@
-CXXFLAGS = -Wall -c -I$(INCLUDE_DIR)
-LDFLAGS = -lglut -lGL -o
-OFILES = view.o queue.o
-PROG = view
 CC = g++
 LD = g++
+CXXFLAGS = -Wall  $(DEPFLAGS) -c -I$(INC_DIR)
+DEPFLAGS = -MT $@ -MF $(DEP_DIR)/$*.d -MMD -MP
+LDFLAGS = -lglut -lGL
 RM = rm -f
-EXEC = view
 
-SRC_DIR= ./src
-INCLUDE_DIR=./include
+SRC_DIR = src
+OBJ_DIR = obj
+INC_DIR = include
+DEP_DIR = $(OBJ_DIR)/.deps
+
+SRCS = $(wildcard $(SRC_DIR)/*.cpp)
+OBJS = $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
+DEPS = $(SRCS:$(SRC_DIR)/%.cpp=$(DEP_DIR)/%.d)
+EXEC = view
 
 all: $(EXEC)
 
-depend:
-	$(CC) -MM $(SRC_DIR)/*.cpp -I$(INCLUDE_DIR) > depend
+$(EXEC): $(OBJS)
+	$(LD) $^ $(LDFLAGS) -o $@
 
--include depend
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(DEP_DIR)
+	$(CC) $(CXXFLAGS) $< -o $@
 
+$(DEP_DIR): ; @mkdir -p $@
 
-$(EXEC): $(OFILES) depend
-	$(LD) $(OFILES) $(LDFLAGS) $@
-
-queue.o:
-	$(CC) $(CXXFLAGS) $<
-
-view.o:
-	$(CC) $(CXXFLAGS) $<
+.PHONY: clean
 
 clean:
-	$(RM) $(OFILES) $(PROG) tmp.txt depend
+	$(RM) $(OBJS) $(EXEC) $(DEPS) tmp.txt
+
+-include $(DEPS)
