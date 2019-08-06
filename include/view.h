@@ -1,12 +1,15 @@
 #ifndef VIEW_H
 #define VIEW_H
-
+#include "ActionQueue.h"
+#include <iostream>
+#include "GL/freeglut.h"
+#include "GL/gl.h"
 #define angleDiff(a, b) (abs(a-b) % 360 <= 180 ? (abs(a-b) % 360) : 360 - (abs(a-b) % 360))
 
 using namespace std;
 
 //Position of the robot
-int position [2];
+float position [2];
 
 //Angle of the robot
 int current_angle;
@@ -14,12 +17,7 @@ int current_angle;
 //Size of the robot
 int size [2];
 
-
-int goal_value;
-char current_movement;
-int number_of_movement;
-queue<char> movements;
-queue<int> values;
+ActionQueue currentActionQueue;
 
 FILE * info_file;
 

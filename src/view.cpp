@@ -1,22 +1,17 @@
-#include "GL/freeglut.h"
-#include "GL/gl.h"
+#include "view.h"
 #include <cstring>
 #include <cmath>
-#include <iostream>
 #include <unistd.h>
 #include <csignal>
 #include <cstdlib>
-#include <queue>
 #include "queue.h"
-#include "view.h"
 
 int main(int argc, char **argv)
 {
-    goal_value = 0;
-    number_of_movement = 0;
     signal(SIGUSR1, signal_handler);
     ppid = getppid();
     kill(ppid, SIGUSR1);
+    currentActionQueue.setPpid(ppid);
 
     if (argc == 6) {
         position[0] = stoi(argv[1]);
@@ -114,94 +109,63 @@ void display()
     glTexCoord2f(1.0f, 0.0f); glVertex3f(x_size/2,-y_size/2,-2);
 
     glEnd();
-    /*
-       glColor4f(1.0,1.0,1.0,0.3)
-       glBegin(GL_TRIANGLE_FAN);
-       int i;
-       glVertex3f(0,0,0);
-       for(i=0; i<100; i++) {
-       glVertex3f(
 
-
-       }
-
-
-       glEnd();
-
-*/
     glPopMatrix();
-
-
 
     glutSwapBuffers(); // Because GLUT_DOUBLE
 }
 
 void timer(int value) {
-    if (number_of_movement != 0){
-        switch(current_movement) {
-            case('m'): move();
-                       break;
-            case('t'): turn();
-                       break;
-        }
-        glutPostRedisplay();
+    switch(currentActionQueue.getCurrentMovement()) {
+        case('m'):
+            move();
+            glutPostRedisplay();
+            break;
+        case('t'):
+            turn();
+            glutPostRedisplay();
+            break;
+        case('n'):
+            break;
     }
     glutTimerFunc(16, timer, 0);
 }
 
 void move() {
+    int goal_value = currentActionQueue.getGoalValue();
     float real_angle = M_PI*(current_angle-90)/180;
     if (goal_value < -2) {
-        goal_value += 5;
-        position[0] += (int)(5*sin(real_angle));
-        position[1] -= (int)(5*cos(real_angle));
+        currentActionQueue.setGoalValue(goal_value+5);
+        position[0] += 5*sin(real_angle);
+        position[1] -= 5*cos(real_angle);
     }
     else if (goal_value > 2) {
-        goal_value -= 5;
-        position[0] -= (int)(5*sin(real_angle));
-        position[1] += (int)(5*cos(real_angle));
+        currentActionQueue.setGoalValue(goal_value-5);
+        position[0] -= 5*sin(real_angle);
+        position[1] += 5*cos(real_angle);
     }
-    else{
-        goal_value = 0;
-        number_of_movement -=1;
-        if (number_of_movement == 0)
-            kill(ppid, SIGUSR1);
-        else {
-            current_movement = movements.front();
-            movements.pop();
-            goal_value = values.front();
-            values.pop();
-        }
-    }
+    else
+        currentActionQueue.popMovement();
+
 }
 
 void turn() {
+    int goal_value = currentActionQueue.getGoalValue();
     if(goal_value < 0) {
-        goal_value +=1;
+        currentActionQueue.setGoalValue(goal_value+1);
         current_angle -= 1;
     }
     else if(goal_value > 0) {
-        goal_value -=1;
+        currentActionQueue.setGoalValue(goal_value-1);
         current_angle +=1;
     }
-    else {
-        goal_value = 0;
-        number_of_movement -=1;
-        if (number_of_movement == 0)
-            kill(ppid, SIGUSR1);
-        else {
-            current_movement = movements.front();
-            movements.pop();
-            goal_value = values.front();
-            values.pop();
-        }
-    }
+    else
+        currentActionQueue.popMovement();
 }
 
 // moveTo is almost the dame function as the function in: libmotors/src/motion.c
 
 void moveTo(int x, int y, int goalAngle) {
-    //cout << current_angle <<endl;
     cout <<"Moving to (" << x <<", " << y << ")"<<endl;
     // compute coordinates of the start to end vector
     int deltaX = x - position[0], deltaY = y - position[1];
@@ -211,13 +175,10 @@ void moveTo(int x, int y, int goalAngle) {
     while(angle >= 360) angle -= 360;
     while(angle < 0) angle += 360;
 
-    cout<<angle <<endl;
     //we want to minimize the total rotation (ie the rotation before and after the translation)
     int current_heading = current_angle;
     float rotation_if_forward = abs(angleDiff(angle, current_heading));
-    //cout<<rotation_if_forward <<endl;
     float rotation_if_backward = abs(angleDiff(angle + 180, current_heading));
-    //cout<<rotation_if_backward <<endl;
     if (goalAngle != -1) {
         rotation_if_forward += abs(angleDiff(angle, goalAngle));
         rotation_if_backward += abs(angleDiff(angle + 180, goalAngle));
@@ -228,48 +189,49 @@ void moveTo(int x, int y, int goalAngle) {
     if (forward == -1) angle = angle + 180;
     if (angle < 0) angle += 360;
     if (angle >= 360) angle -= 360;
-    //cout<< goalAngle <<endl;
-    //cout << angle <<endl;
-    goal_value = angle-current_angle;
-    values.push(forward * sqrt(deltaX * deltaX + deltaY * deltaY));
-    values.push(goalAngle-angle);
-    current_movement = 't';
-    movements.push('m');
-    movements.push('t');
-    number_of_movement = 3;
-
+    currentActionQueue.clear();
+    currentActionQueue.pushMovement('t',angle-current_angle);
+    currentActionQueue.pushMovement('m',forward * sqrt(deltaX * deltaX + deltaY * deltaY));
+    currentActionQueue.pushMovement('t',goalAngle-angle);
 }
 
 void signal_handler(int signum) {
     char data_in[30];
     cin >> data_in;
     switch(*data_in) {
-        case 'm': {
-                      goal_value = stoi(data_in +1,NULL);
-                      number_of_movement = 1;
-                      current_movement = 'm';
-                      if (goal_value >= 0)
-                          cout << "The robot is moving "<< goal_value <<" millimeter(s) forward"<< endl;
-                      else
-                          cout << "The robot is moving "<< -goal_value <<" millimeter(s) backward"<< endl;
-                  } break;
-        case 't': {
-                      goal_value = stoi(data_in+1,NULL)-current_angle;
-                      number_of_movement = 1;
-                      current_movement = 't';
-                      cout << "The robot is rotating by " << goal_value << " degree(s)" << endl;
-                  } break;
-        case 'o': {
-                      int x = stoi(strtok(data_in + 1, "/"), NULL);
-                      int y = stoi(strtok(NULL,"/"), NULL);
-                      int goalAngle = stoi(strtok(NULL, "/"), NULL);
-                      moveTo(x,y,goalAngle);
-                  } break;
-        default:
-                  cout << "view: the instruction '" <<data_in << "' is not recognized"<< endl;
-                  break;
-    }
+        case 'm':
+            {
+                int goal_distance = stoi(data_in + 1, NULL);
+                currentActionQueue.clear();
+                currentActionQueue.pushMovement('m', goal_distance);
+                if ( goal_distance >= 0)
+                    cout << "The robot is moving "<< goal_distance <<" millimeter(s) forward"<< endl;
+                else
+                    cout << "The robot is moving "<< goal_distance <<" millimeter(s) backward"<< endl;
+                break;
+            }
+        case 't':
+            {
+                int goal_angle = stoi(data_in + 1, NULL) - current_angle;
+                currentActionQueue.clear();
+                currentActionQueue.pushMovement('t', goal_angle);
+                cout << "The robot is rotating by " << goal_angle << " degree(s)" << endl;
+                break;
+            }
 
+        case 'o':
+            {
+                int x = stoi(strtok(data_in + 1, "/"), NULL);
+                int y = stoi(strtok(NULL,"/"), NULL);
+                int goalAngle = stoi(strtok(NULL, "/"), NULL);
+                moveTo(x,y,goalAngle);
+                break;
+            }
+
+        default:
+            cout << "view: the instruction '" <<data_in << "' is not recognized"<< endl;
+            break;
+    }
 }
 
 void keyboard(unsigned char key, int x, int y) {
@@ -278,12 +240,12 @@ void keyboard(unsigned char key, int x, int y) {
         fclose(info_file);
     }
     else if (key == 'z') {
-        position[0] -= (int)(50*sin(M_PI*current_angle/180));
-        position[1] += (int)(50*cos(M_PI*current_angle/180));
+        position[0] -= 50*sin(M_PI*current_angle/180);
+        position[1] += 50*cos(M_PI*current_angle/180);
     }
     else if (key == 's') {
-        position[0] += (int)(50*sin(M_PI*current_angle/180));
-        position[1] -= (int)(50*cos(M_PI*current_angle/180));
+        position[0] += 50*sin(M_PI*current_angle/180);
+        position[1] -= 50*cos(M_PI*current_angle/180);
     }
     else if (key == 'q') {
         current_angle += 2;
@@ -309,7 +271,6 @@ void reshape(int width, int height) {
     glLoadIdentity();
     glOrtho(-x, x, -y, y, 0, 4.0);
 }
-
 
 
 GLuint loadBMP_custom(const char * imagepath) {
