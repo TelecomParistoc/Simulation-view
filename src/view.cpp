@@ -1,10 +1,10 @@
-#include "view.h"
+#include "view.hpp"
 #include <cstring>
 #include <cmath>
 #include <unistd.h>
 #include <csignal>
 #include <cstdlib>
-#include "queue.h"
+#include "queue.hpp"
 
 int main(int argc, char **argv)
 {
@@ -168,17 +168,16 @@ void turn() {
 void moveTo(int x, int y, int goalAngle) {
     cout <<"Moving to (" << x <<", " << y << ")"<<endl;
     // compute coordinates of the start to end vector
-    int deltaX = x - position[0], deltaY = y - position[1];
+    float deltaX = x - position[0], deltaY = y - position[1];
 
     // compute heading the robot should have to go to its destination forward
-    int angle = atan2(deltaY, deltaX)*180.0/M_PI;
+    int angle = (int)(atan2(deltaY, deltaX)*180.0/M_PI);
     while(angle >= 360) angle -= 360;
     while(angle < 0) angle += 360;
 
     //we want to minimize the total rotation (ie the rotation before and after the translation)
-    int current_heading = current_angle;
-    float rotation_if_forward = abs(angleDiff(angle, current_heading));
-    float rotation_if_backward = abs(angleDiff(angle + 180, current_heading));
+    float rotation_if_forward = abs(angleDiff(angle, current_angle));
+    float rotation_if_backward = abs(angleDiff(angle + 180, current_angle));
     if (goalAngle != -1) {
         rotation_if_forward += abs(angleDiff(angle, goalAngle));
         rotation_if_backward += abs(angleDiff(angle + 180, goalAngle));
@@ -191,7 +190,7 @@ void moveTo(int x, int y, int goalAngle) {
     if (angle >= 360) angle -= 360;
     currentActionQueue.clear();
     currentActionQueue.pushMovement('t',angle-current_angle);
-    currentActionQueue.pushMovement('m',forward * sqrt(deltaX * deltaX + deltaY * deltaY));
+    currentActionQueue.pushMovement('m',(int)(forward * sqrt(deltaX * deltaX + deltaY * deltaY)));
     currentActionQueue.pushMovement('t',goalAngle-angle);
 }
 

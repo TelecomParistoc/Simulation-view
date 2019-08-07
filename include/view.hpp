@@ -1,6 +1,6 @@
 #ifndef VIEW_H
 #define VIEW_H
-#include "ActionQueue.h"
+#include "ActionQueue.hpp"
 #include <iostream>
 #include "GL/freeglut.h"
 #include "GL/gl.h"

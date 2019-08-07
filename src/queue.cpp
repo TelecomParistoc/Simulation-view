@@ -1,5 +1,5 @@
-#include "queue.h"
-#include <stdlib.h>
+#include "queue.hpp"
+#include <cstdlib>
 
 struct queueElement {
     void* content;

@@ -1,4 +1,4 @@
-#include "ActionQueue.h"
+#include "ActionQueue.hpp"
 
 ActionQueue::ActionQueue() {
     number_of_movements = 0;
@@ -34,7 +34,6 @@ void ActionQueue::popMovement () {
     number_of_movements -=1;
     if(number_of_movements == 0) {
         kill(ppid, SIGUSR1);
-        currentAction.value = 0;
     } else {
         currentAction = actions.front();
         actions.pop();
@@ -44,6 +43,7 @@ void ActionQueue::popMovement () {
 void ActionQueue::clear(){
     while(!actions.empty())
         actions.pop();
+    number_of_movements = 0;
 }
 
 void ActionQueue::setPpid(const pid_t& ppid) {

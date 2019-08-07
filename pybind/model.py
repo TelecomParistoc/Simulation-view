@@ -61,8 +61,8 @@ test.turn(30,test_callback)
 sleep(3)
 test.turn(180,test_callback)
 sleep(3)
-test.moveTo(2000,1000,180)
-sleep(1);
+test.moveTo(3000,1000,180)
+sleep(1.5);
 test.moveTo(0,0,180)
 
 """
