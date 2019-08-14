@@ -10,7 +10,6 @@ int main(int argc, char **argv)
 {
     signal(SIGUSR1, signal_handler);
     ppid = getppid();
-    kill(ppid, SIGUSR1);
     currentActionQueue.setPpid(ppid);
 
     if (argc == 6) {
@@ -30,7 +29,6 @@ int main(int argc, char **argv)
     }
 
 
-    cout << "### Press c to close the Simulation view" << endl;
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 
@@ -61,6 +59,8 @@ int main(int argc, char **argv)
     fieldTex = loadBMP_custom("res/field.bmp");
     robotTex = loadBMP_custom("res/logo.bmp");
 
+    cout << "### Press space to start the simulation" << endl;
+    cout << "### Press c to close the Simulation view" << endl;
 
     glutTimerFunc(0,timer,0);
     glutMainLoop();
@@ -163,7 +163,7 @@ void turn() {
         currentActionQueue.popMovement();
 }
 
-// moveTo is almost the dame function as the function in: libmotors/src/motion.c
+// moveTo is almost the same function as the function in: libmotors/src/motion.c
 
 void moveTo(int x, int y, int goalAngle) {
     cout <<"Moving to (" << x <<", " << y << ")"<<endl;
@@ -234,25 +234,17 @@ void signal_handler(int signum) {
 }
 
 void keyboard(unsigned char key, int x, int y) {
-    if (key == 'c') {
-        glutLeaveMainLoop();
-        fclose(info_file);
+    switch(key) {
+        case ' ':
+            kill(ppid, SIGUSR1);
+            glutPostRedisplay();
+            break;
+        case 'c':
+            glutLeaveMainLoop();
+            fclose(info_file);
+            kill(ppid, SIGTERM);
+            break;
     }
-    else if (key == 'z') {
-        position[0] -= 50*sin(M_PI*current_angle/180);
-        position[1] += 50*cos(M_PI*current_angle/180);
-    }
-    else if (key == 's') {
-        position[0] += 50*sin(M_PI*current_angle/180);
-        position[1] -= 50*cos(M_PI*current_angle/180);
-    }
-    else if (key == 'q') {
-        current_angle += 2;
-    }
-    else if (key == 'd') {
-        current_angle -= 2;
-    }
-    glutPostRedisplay();
 }
 
 void reshape(int width, int height) {
