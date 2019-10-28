@@ -12,8 +12,9 @@ float position [2];
 int current_angle;
 int size [2];
 FILE * info_file;
-GLuint fieldTex;
-GLuint robotTex;
+static GLuint fieldTex;
+static GLuint robotTex;
+static int currentDirection = DIR_NONE;
 
 int main(int argc, char **argv)
 {
@@ -30,11 +31,6 @@ int main(int argc, char **argv)
     } else {
         cout << "Wrong number of arguments, ./view needs 5 arguments" << endl;
         return(1);
-    }
-    info_file = fopen("tmp.txt","w");
-    if (info_file == NULL) {
-        perror("Error");
-        return -1;
     }
 
 
@@ -147,14 +143,18 @@ void move() {
         currentActionQueue.setGoalValue(goal_value+5);
         position[0] += 5*sin(real_angle);
         position[1] -= 5*cos(real_angle);
+        currentDirection = DIR_BACKWARD;
     }
     else if (goal_value > 2) {
         currentActionQueue.setGoalValue(goal_value-5);
         position[0] -= 5*sin(real_angle);
         position[1] += 5*cos(real_angle);
+        currentDirection = DIR_FORWARD;
     }
-    else
+    else {
         currentActionQueue.popMovement();
+        currentDirection = DIR_NONE;
+    }
 
 }
 
@@ -203,6 +203,18 @@ void moveTo(int x, int y, int goalAngle) {
     currentActionQueue.pushMovement('t',goalAngle-angle);
 }
 
+void writeDirection() {
+    info_file = fopen("tmp.txt","w");
+    if (info_file == NULL) {
+        perror("Error: can't open tmp.txt");
+        exit(-1);
+    }
+    fprintf(info_file, "%d\n",currentDirection);
+    fclose(info_file);
+    kill(ppid, SIGUSR2);
+}
+
+
 void signal_handler(int signum) {
     char data_in[30];
     cin >> data_in;
@@ -235,6 +247,10 @@ void signal_handler(int signum) {
                 moveTo(x,y,goalAngle);
                 break;
             }
+        case 'd':
+            writeDirection();
+            break;
+
 
         default:
             cout << "view: the instruction '" <<data_in << "' is not recognized"<< endl;
@@ -250,7 +266,7 @@ void keyboard(unsigned char key, int x, int y) {
             break;
         case 'c':
             glutLeaveMainLoop();
-            fclose(info_file);
+            remove("tmp.txt");
             kill(ppid, SIGTERM);
             break;
     }

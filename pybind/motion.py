@@ -1,7 +1,8 @@
 from subprocess import Popen, PIPE
 from shlex import split
-from signal import SIGUSR1, pause, signal
+from signal import SIGUSR1, pause, signal, SIGUSR2
 from time import sleep
+from os import remove
 
 #could have some issues if there are different callbacks at the same time
 xPos = 0
@@ -14,7 +15,12 @@ callback = lambda: None
 def callback_handler(signum, stf) :
     callback()
 
+def read_direction(signum, stf):
+    direction_file=open("tmp.txt", "r")
+    print(int(direction_file.read()))
+
 signal(SIGUSR1, callback_handler)
+signal(SIGUSR2, read_direction)
 
 view = Popen(["./view",str(xPos), str(yPos), str(angle), str(xSize), str(ySize)], stdout=None, stdin=PIPE)
 pause() #Doesn't work on Windows
@@ -49,9 +55,11 @@ def moveTo(x, y, goalAngle, callback = lambda: None):
 
 def close_simulation(secs = 0):
     sleep(secs)
+    #remove("tmp.txt")
     view.terminate()
 
-# def getDirection():
-
-
+def getDirection():
+    view.send_signal(SIGUSR1)
+    view.stdin.write(str.encode('d\n'))
+    view.stdin.flush()
 
