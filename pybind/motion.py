@@ -9,7 +9,7 @@ yPos = 0
 angle = 0
 xSize = 250
 ySize = 250
-
+callback = lambda: None
 
 def callback_handler(signum, stf) :
     callback()
@@ -17,9 +17,7 @@ def callback_handler(signum, stf) :
 signal(SIGUSR1, callback_handler)
 
 view = Popen(["./view",str(xPos), str(yPos), str(angle), str(xSize), str(ySize)], stdout=None, stdin=PIPE)
-callback = lambda: None
 pause() #Doesn't work on Windows
-
 
 
 def check_number(x):
@@ -52,4 +50,8 @@ def moveTo(x, y, goalAngle, callback = lambda: None):
 def close_simulation(secs = 0):
     sleep(secs)
     view.terminate()
+
+# def getDirection():
+
+
 

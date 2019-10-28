@@ -1,34 +1,23 @@
-CC = g++
-LD = g++
-CXXFLAGS = -Wall  $(DEPFLAGS) -c -I$(INC_DIR)
-DEPFLAGS = -MT $@ -MF $(DEP_DIR)/$*.d -MMD -MP
-LDFLAGS = -lglut -lGL
-RM = rm -f
+CXXFLAGS	= -O1 -Wall -Werror $(DEPFLAGS) -I$(INC_DIR)
+DEPFLAGS	= -MD -MP
+LDFLAGS		= -lglut -lGL
+CC		= $(CXX)
 
-SRC_DIR := src
-OBJ_DIR := obj
-INC_DIR := include
-DEP_DIR := $(OBJ_DIR)/.deps
+SRC_DIR		:= src
+INC_DIR		:= include
 
-SRCS = $(wildcard $(SRC_DIR)/*.cpp)
-OBJS = $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
-DEPS := $(SRCS:$(SRC_DIR)/%.cpp=$(DEP_DIR)/%.d)
-EXEC = view
+SRCS		= $(wildcard $(SRC_DIR)/*.cpp)
+OBJS		= $(SRCS:$(SRC_DIR)/%.cpp=%.o)
+EXE		= view
+VPATH		= src
 
-all: $(EXEC)
+.PHONY: clean all
 
-$(EXEC): $(OBJS)
-	$(LD) $^ $(LDFLAGS) -o $@
+all: $(EXE)
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(DEP_DIR)/%.d | $(DEP_DIR)
-	$(CC) $(CXXFLAGS) $< -o $@
-
-$(DEP_DIR): ; @mkdir -p $@
-
-.PHONY: clean
+$(EXE): $(OBJS)
 
 clean:
-	$(RM) $(OBJS) $(EXEC) $(DEPS) tmp.txt
+	$(RM) *.o *.d $(EXE) tmp.txt
 
-$(DEPS):
-include $(wildcard $(DEPS))
+-include $(wildcard *.d)

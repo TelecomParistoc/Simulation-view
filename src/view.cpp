@@ -4,7 +4,16 @@
 #include <unistd.h>
 #include <csignal>
 #include <cstdlib>
-#include "queue.hpp"
+#include <iostream>
+
+pid_t ppid;
+ActionQueue currentActionQueue;
+float position [2];
+int current_angle;
+int size [2];
+FILE * info_file;
+GLuint fieldTex;
+GLuint robotTex;
 
 int main(int argc, char **argv)
 {
