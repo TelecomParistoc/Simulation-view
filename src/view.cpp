@@ -9,6 +9,7 @@
 pid_t ppid;
 ActionQueue currentActionQueue;
 float position [2];
+float offset_position[2];
 int current_angle;
 int size [2];
 FILE * info_file;
@@ -59,7 +60,7 @@ int main(int argc, char **argv)
     // Projection transformation
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(-1.5, 1.5, -1.1667, 1.1667, 0, 4.0);
+    glOrtho(-1.5, 1.5, -5/3, 5/3, 0, 4.0);
 
     fieldTex = loadBMP_custom("res/field.bmp");
     robotTex = loadBMP_custom("res/logo.bmp");
@@ -244,13 +245,17 @@ void signal_handler(int signum) {
                 int x = stoi(strtok(data_in + 1, "/"), NULL);
                 int y = stoi(strtok(NULL,"/"), NULL);
                 int goalAngle = stoi(strtok(NULL, "/"), NULL);
-                moveTo(x,y,goalAngle);
+                   moveTo(x - offset_position[0], y - offset_position[1], goalAngle);
                 break;
             }
         case 'd':
             writeDirection();
             break;
 
+        case 's':
+            offset_position[0] = stoi(strtok(data_in + 1, "/"), NULL);
+            offset_position[1] = stoi(strtok(NULL,"/"), NULL);
+            break;
 
         default:
             cout << "view: the instruction '" <<data_in << "' is not recognized"<< endl;

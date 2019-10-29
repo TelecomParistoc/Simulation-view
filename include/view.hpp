@@ -10,7 +10,6 @@
 #define DIR_FORWARD 1
 #define DIR_BACKWARD 2
 
-
 void keyboard(unsigned char key, int x, int y);
 void reshape(int width, int height);
 GLuint loadBMP_custom(const char * imagepath);
@@ -21,6 +20,5 @@ void turn();
 void moveTo(int x, int y, int goalAngle);
 void display();
 void writeDirection();
-
 
 #endif

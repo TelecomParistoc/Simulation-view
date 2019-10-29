@@ -17,7 +17,7 @@ def callback_handler(signum, stf) :
 
 def read_direction(signum, stf):
     direction_file=open("tmp.txt", "r")
-    print(int(direction_file.read()))
+    return int(direction_file.read())
 
 signal(SIGUSR1, callback_handler)
 signal(SIGUSR2, read_direction)
@@ -55,7 +55,7 @@ def moveTo(x, y, goalAngle, callback = lambda: None):
 
 def close_simulation(secs = 0):
     sleep(secs)
-    #remove("tmp.txt")
+    remove("tmp.txt")
     view.terminate()
 
 def getDirection():
@@ -63,3 +63,9 @@ def getDirection():
     view.stdin.write(str.encode('d\n'))
     view.stdin.flush()
 
+def setPosition(x, y):
+    check_number(x)
+    check_number(y)
+    view.send_signal(SIGUSR1)
+    view.stdin.write(str.encode('s'+str(x)+'/'+str(y)+'\n'))
+    view.stdin.flush()
