@@ -2,7 +2,7 @@
 
 The Simulation view is a graphic display done with OpenGL that shows the route of the robot.
 
-## Instalation
+## Installation
 
 You need to install two libraries: [freeglut](http://freeglut.sourceforge.net/) and [mesa](https://www.mesa3d.org/).
 
